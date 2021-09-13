@@ -76,6 +76,7 @@ impl<'a> WorkSheetBuilder<'a> {
 
     pub fn build(self) -> Result<WorkSheet> {
         let data = if self.csv_data.is_some() {
+            // TODO: move CSV package behind an API (facade)
             // TODO: this should be moved to `csv_data()` - or better yet dispatch to a private `csv_build` method and just match here?
             let file = File::open(self.csv_data.unwrap())?;
             let mut rdr = csv::Reader::from_reader(file);
