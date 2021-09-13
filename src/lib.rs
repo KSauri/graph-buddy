@@ -31,7 +31,7 @@ impl From<ParseIntError> for ParseError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct WorkSheet {
     data: Vec<(i64, i64)>,
 }
@@ -45,6 +45,7 @@ impl Index<usize> for WorkSheet {
     }
 }
 
+#[derive(Default)]
 pub struct WorkSheetBuilder<'a> {
     csv_data: Option<&'a str>,
     vec_data: Option<Vec<i64>>,
@@ -59,17 +60,15 @@ impl<'a> WorkSheetBuilder<'a> {
     }
 
     pub fn csv_data(&mut self, csv_data: &'a str) -> Self {
-        Self {
-            csv_data: Some(csv_data),
-            vec_data: None,
-        }
+        let mut result: WorkSheetBuilder = Default::default();
+        result.csv_data = Some(csv_data);
+        result
     }
 
     pub fn vec_data<T: NumCast + Clone>(&mut self, vec_data: Vec<T>) -> Self {
-        Self {
-            csv_data: None,
-            vec_data: vec_data.iter().map(|v| NumCast::from(v.clone())).collect(),
-        }
+        let mut result: WorkSheetBuilder = Default::default();
+        result.vec_data = vec_data.iter().map(|v| NumCast::from(v.clone())).collect();
+        result
     }
 
     pub fn build(self) -> Result<WorkSheet> {
