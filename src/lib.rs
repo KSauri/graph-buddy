@@ -8,6 +8,8 @@ use std::ops::Index;
 
 pub fn main() {}
 
+// TODO: add better error messaging
+// TODO: move this to a parsing module
 #[derive(Debug, Clone)]
 pub struct ParseError;
 
@@ -31,16 +33,17 @@ impl From<ParseIntError> for ParseError {
     }
 }
 
+// TODO: add support for multiple columns
+// TODO: revisit the structure of `data`
 #[derive(Debug, Default)]
 pub struct WorkSheet {
     data: Vec<(i64, i64)>,
 }
 
-impl WorkSheet {}
-
 impl Index<usize> for WorkSheet {
     type Output = (i64, i64);
     fn index(&self, idx: usize) -> &Self::Output {
+        // TODO: this shouldn't reveal the underlying vec; maybe add a data type wrapper around the internal vectors?
         &self.data[idx]
     }
 }
@@ -73,6 +76,7 @@ impl<'a> WorkSheetBuilder<'a> {
 
     pub fn build(self) -> Result<WorkSheet> {
         let data = if self.csv_data.is_some() {
+            // TODO: this should be moved to `csv_data()` - or better yet dispatch to a private `csv_build` method and just match here?
             let file = File::open(self.csv_data.unwrap())?;
             let mut rdr = csv::Reader::from_reader(file);
             let mut data: Vec<(i64, i64)> = vec![];
@@ -105,4 +109,7 @@ mod tests {
         assert_eq!(ws[0].0, 1);
         assert_eq!(ws[1].1, 4);
     }
+
+    // TODO: add test for vectors
+    // TODO: add test for incorrectly formatted CSVs
 }
