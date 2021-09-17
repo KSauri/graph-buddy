@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn worksheet_from_csv() {
         let ws: WorkSheet = WorkSheetBuilder::new()
-            .csv_data("data/WorkSheet1.csv")
+            .csv_data("data/worksheet1.csv")
             .build()
             .unwrap();
 
