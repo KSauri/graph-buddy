@@ -68,6 +68,25 @@ impl<'a> WorkSheetBuilder<'a> {
         }
     }
 
+    fn build_from_csv(&self) -> Result<WorkSheet> {
+        if self.csv_data.is_none() {
+            return Err(ParseError {});
+        }
+        // TODO: move CSV package behind an API (facade)
+        // TODO: this should be moved to `csv_data()` - or better yet dispatch to a private `csv_build` method and just match here?
+        let file = File::open(self.csv_data.unwrap())?; // TODO: better handling on this unwrap
+        let mut rdr = csv::Reader::from_reader(file);
+        let mut data: Vec<(i64, i64)> = vec![];
+        for result in rdr.records() {
+            let record = result?;
+            data.push((
+                record.get(0).ok_or_else(|| ParseError)?.parse::<i64>()?,
+                record.get(1).ok_or_else(|| ParseError)?.parse::<i64>()?,
+            ));
+        }
+        Ok(WorkSheet { data })
+    }
+
     pub fn csv_data(&mut self, csv_data: &'a str) -> Self {
         let mut result: WorkSheetBuilder = Default::default();
         result.csv_data = Some(csv_data);
@@ -81,24 +100,11 @@ impl<'a> WorkSheetBuilder<'a> {
     }
 
     pub fn build(self) -> Result<WorkSheet> {
-        let data = if self.csv_data.is_some() {
-            // TODO: move CSV package behind an API (facade)
-            // TODO: this should be moved to `csv_data()` - or better yet dispatch to a private `csv_build` method and just match here?
-            let file = File::open(self.csv_data.unwrap())?; // TODO: better handling on this unwrap
-            let mut rdr = csv::Reader::from_reader(file);
-            let mut data: Vec<(i64, i64)> = vec![];
-            for result in rdr.records() {
-                let record = result?;
-                data.push((
-                    record.get(0).ok_or_else(|| ParseError)?.parse::<i64>()?,
-                    record.get(1).ok_or_else(|| ParseError)?.parse::<i64>()?,
-                ));
-            }
-            data
+        if self.csv_data.is_some() {
+            self.build_from_csv()
         } else {
-            vec![]
-        };
-        Ok(WorkSheet { data })
+            Ok(WorkSheet { data: vec![] })
+        }
     }
 }
 
