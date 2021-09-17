@@ -33,6 +33,12 @@ impl From<ParseIntError> for ParseError {
     }
 }
 
+impl From<csv::Error> for ParseError {
+    fn from(_e: csv::Error) -> Self {
+        Self {}
+    }
+}
+
 // TODO: add support for multiple columns
 // TODO: revisit the structure of `data`
 #[derive(Debug, Default)]
@@ -78,11 +84,11 @@ impl<'a> WorkSheetBuilder<'a> {
         let data = if self.csv_data.is_some() {
             // TODO: move CSV package behind an API (facade)
             // TODO: this should be moved to `csv_data()` - or better yet dispatch to a private `csv_build` method and just match here?
-            let file = File::open(self.csv_data.unwrap())?;
+            let file = File::open(self.csv_data.unwrap())?; // TODO: better handling on this unwrap
             let mut rdr = csv::Reader::from_reader(file);
             let mut data: Vec<(i64, i64)> = vec![];
             for result in rdr.records() {
-                let record = result.unwrap();
+                let record = result?;
                 data.push((
                     record.get(0).ok_or_else(|| ParseError)?.parse::<i64>()?,
                     record.get(1).ok_or_else(|| ParseError)?.parse::<i64>()?,
@@ -111,6 +117,18 @@ mod tests {
         assert_eq!(ws[1].1, 4);
     }
 
+    #[test]
+    fn incorrectly_formatted_worksheet_from_csv() {
+        let ws = WorkSheetBuilder::new()
+            .csv_data("data/improper1.csv")
+            .build();
+
+        match ws {
+            Ok(_) => panic!("unexpected"),
+            Err(ParseError {}) => {}
+        }
+    }
+
     // TODO: add test for vectors
-    // TODO: add test for incorrectly formatted CSVs
+    // TODO: add more tests for incorrectly formatted CSVs
 }
