@@ -6,14 +6,17 @@ use std::fs::File;
 use std::num::ParseIntError;
 use std::ops::Index;
 
-pub fn main() {}
+extern crate image;
+use image::{Rgb, RgbImage};
+
+// TODO: start splitting this up into modules
 
 // TODO: add better error messaging
 // TODO: move this to a parsing module
 #[derive(Debug, Clone)]
 pub struct ParseError;
 
-type Result<T> = std::result::Result<T, ParseError>;
+type WSResult<T> = std::result::Result<T, ParseError>;
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -68,7 +71,7 @@ impl<'a> WorkSheetBuilder<'a> {
         }
     }
 
-    fn build_from_csv(&self) -> Result<WorkSheet> {
+    fn build_from_csv(&self) -> WSResult<WorkSheet> {
         if self.csv_data.is_none() {
             return Err(ParseError {});
         }
@@ -99,12 +102,90 @@ impl<'a> WorkSheetBuilder<'a> {
         result
     }
 
-    pub fn build(self) -> Result<WorkSheet> {
+    pub fn build(self) -> WSResult<WorkSheet> {
         if self.csv_data.is_some() {
             self.build_from_csv()
         } else {
             Ok(WorkSheet { data: vec![] })
         }
+    }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub struct Point {
+    x: u32,
+    y: u32,
+}
+
+impl Point {
+    pub fn transform(self, height: u32) -> Point {
+        Point {
+            x: self.x,
+            y: height - self.y,
+        }
+    }
+}
+
+pub trait Drawable {
+    fn draw(&mut self);
+}
+
+pub struct PngCanvas {
+    filename: &'static str,
+    border: u32,
+    image_buffer: RgbImage,
+}
+
+impl PngCanvas {
+    pub fn new(border: u32, filename: &'static str) -> Self {
+        Self {
+            filename,
+            border,
+            image_buffer: RgbImage::new(600, 600),
+        }
+    }
+
+    fn save(&mut self) {
+        self.image_buffer.save(self.filename).unwrap();
+    }
+
+    fn fill_in_white(&mut self) {
+        for (_, _, pixel) in self.image_buffer.enumerate_pixels_mut() {
+            *pixel = image::Rgb([255, 255, 255]);
+        }
+    }
+
+    fn draw_axis(&mut self) {
+        for y in 0..600 {
+            if y % 10 == 0 {
+                self.image_buffer
+                    .put_pixel(self.border + 1, y, Rgb([255, 0, 0]));
+                self.image_buffer
+                    .put_pixel(self.border + 2, y, Rgb([255, 0, 0]));
+            }
+            self.image_buffer
+                .put_pixel(self.border, y, Rgb([255, 0, 0]));
+        }
+
+        // draw bottom axis
+        for x in 0..600 {
+            if x % 10 == 0 {
+                self.image_buffer
+                    .put_pixel(x, 600 - self.border - 1, Rgb([255, 0, 0]));
+                self.image_buffer
+                    .put_pixel(x, 600 - self.border - 2, Rgb([255, 0, 0]));
+            }
+            self.image_buffer
+                .put_pixel(x, 600 - self.border, Rgb([255, 0, 0]));
+        }
+    }
+}
+
+impl Drawable for PngCanvas {
+    fn draw(&mut self) {
+        self.fill_in_white();
+        self.draw_axis();
+        self.save();
     }
 }
 
@@ -135,6 +216,27 @@ mod tests {
         }
     }
 
+    #[test]
+    fn transform_point() {
+        let inputs = vec![
+            Point { x: 1, y: 10 },
+            Point { x: 5, y: 20 },
+            Point { x: 17, y: 23 },
+        ];
+
+        let height = 100;
+        let expected = vec![
+            Point { x: 1, y: 90 },
+            Point { x: 5, y: 80 },
+            Point { x: 17, y: 77 },
+        ];
+
+        for (idx, &input) in inputs.iter().enumerate() {
+            assert_eq!(input.transform(height), expected[idx]);
+        }
+    }
+
     // TODO: add test for vectors
     // TODO: add more tests for incorrectly formatted CSVs
+    // TODO: figure out how to test side effects (aka a png being created)
 }
