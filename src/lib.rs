@@ -130,13 +130,13 @@ pub trait Drawable {
     fn draw(&mut self);
 }
 
-pub struct PngCanvas {
+pub struct Canvas {
     filename: &'static str,
     border: u32,
     image_buffer: RgbImage,
 }
 
-impl PngCanvas {
+impl Canvas {
     pub fn new(border: u32, filename: &'static str) -> Self {
         Self {
             filename,
@@ -181,7 +181,7 @@ impl PngCanvas {
     }
 }
 
-impl Drawable for PngCanvas {
+impl Drawable for Canvas {
     fn draw(&mut self) {
         self.fill_in_white();
         self.draw_axis();

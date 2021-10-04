@@ -1,7 +1,7 @@
 extern crate image;
-use graph_buddy::{Drawable, PngCanvas};
+use graph_buddy::{Canvas, Drawable};
 
 fn main() {
-    let mut canvas = PngCanvas::new(10, "foo.png");
+    let mut canvas = Canvas::new(10, "foo.png");
     canvas.draw();
 }
